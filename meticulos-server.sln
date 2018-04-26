@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2003
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "meticulos-server", "meticulos-server\meticulos-server.csproj", "{FC63330C-CFC1-48B3-BCE5-B3418C4587A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meticulos.Api", "Meticulos.Api\Meticulos.Api.csproj", "{D9C4579C-BD51-475B-8F75-C13373C48876}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FC63330C-CFC1-48B3-BCE5-B3418C4587A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC63330C-CFC1-48B3-BCE5-B3418C4587A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FC63330C-CFC1-48B3-BCE5-B3418C4587A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FC63330C-CFC1-48B3-BCE5-B3418C4587A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9C4579C-BD51-475B-8F75-C13373C48876}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9C4579C-BD51-475B-8F75-C13373C48876}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9C4579C-BD51-475B-8F75-C13373C48876}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9C4579C-BD51-475B-8F75-C13373C48876}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
