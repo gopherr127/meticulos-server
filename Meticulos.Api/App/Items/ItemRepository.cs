@@ -36,26 +36,29 @@ namespace Meticulos.Api.App.Items
             try
             {
                 // Set Ancestor IDs
-                List<ObjectId> ancestorIds = new List<ObjectId>();
-                if (item.ParentId != ObjectId.Empty)
-                {
-                    var parent = await Get(item.ParentId);
-                    if (parent == null)
-                        throw new ApplicationException("Unable to find parent specified.");
-                    ancestorIds.AddRange(parent.AncestorIds);
-                }
-                ancestorIds.Add(item.ParentId);
-                item.AncestorIds = ancestorIds;
+                //List<ObjectId> ancestorIds = new List<ObjectId>();
+                //if (item.ParentId != ObjectId.Empty)
+                //{
+                //    var parent = await Get(item.ParentId);
+                //    if (parent == null)
+                //        throw new ApplicationException("Unable to find parent specified.");
+                //    ancestorIds.AddRange(parent.AncestorIds);
+                //}
+                //ancestorIds.Add(item.ParentId);
+                //item.AncestorIds = ancestorIds;
 
                 // Set Type from ID
                 var itemType = await _itemTypeRepository.Get(item.TypeId);
-                item.Type = itemType ?? throw new ApplicationException("Invalid Type ID.");
+                item.Type = itemType 
+                    ?? throw new ApplicationException("Invalid Type ID.");
 
                 if (item.WorkflowNode == null)
                 {
                     // Set Workflow Node from ItemType's associated Workflow
                     var workflowNodes = await _workflowNodeRepository.Search(itemType.WorkflowId);
-                    item.WorkflowNode = workflowNodes.FirstOrDefault();
+                    var workflowNode = workflowNodes.FirstOrDefault();
+                    item.WorkflowNode = workflowNode 
+                        ?? throw new ApplicationException("Associated workflow does not have any nodes.");
                 }
 
                 return item;
@@ -121,27 +124,20 @@ namespace Meticulos.Api.App.Items
             }
         }
 
-        public async Task<List<Item>> Search(string name)
+        public async Task<List<Item>> Search(ItemSearchRequest request)
         {
-            var filter = Builders<Item>.Filter.Eq("Name", name);
+            List<FilterDefinition<Item>> filters = new List<FilterDefinition<Item>>();
+            if (!string.IsNullOrEmpty(request.TypeId))
+                filters.Add(Builders<Item>.Filter.Eq("TypeId", new ObjectId(request.TypeId)));
+            if (!string.IsNullOrEmpty(request.ParentId))
+                filters.Add(Builders<Item>.Filter.Eq("ParentId", new ObjectId(request.ParentId)));
+            if (!string.IsNullOrEmpty(request.Name))
+                filters.Add(Builders<Item>.Filter.Eq("Name", request.Name));
 
             try
             {
-                return await _context.Items.Find(filter).ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        public async Task<List<Item>> Search(ObjectId parentId)
-        {
-            var filter = Builders<Item>.Filter.Eq("ParentId", parentId);
-
-            try
-            {
-                var items = await _context.Items.Find(filter).ToListAsync();
+                var filterConcat = Builders<Item>.Filter.And(filters);
+                var items = await _context.Items.Find(filterConcat).ToListAsync();
 
                 // Hydrate ItemType for all Items
                 Dictionary<string, ItemType> itemTypeCache = new Dictionary<string, ItemType>();
@@ -165,7 +161,7 @@ namespace Meticulos.Api.App.Items
                 throw ex;
             }
         }
-
+        
         public async Task<Item> Add(Item item)
         {
             try

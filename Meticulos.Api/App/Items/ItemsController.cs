@@ -42,17 +42,8 @@ namespace Meticulos.Api.App.Items
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
-                if (!string.IsNullOrEmpty(requestArgs.Name))
-                {
-                    return await _itemRepository.Search(requestArgs.Name);
-                }
-                else if (!string.IsNullOrEmpty(requestArgs.ParentId))
-                {
-                    return await _itemRepository.Search(new ObjectId(requestArgs.ParentId));
-                }
-
-                return null;
+                
+                return await _itemRepository.Search(requestArgs);
             });
         }
 
