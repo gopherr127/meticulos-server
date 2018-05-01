@@ -9,6 +9,7 @@ namespace Meticulos.Api.App.Items
 {
     public class Item : Entity
     {
+        public ObjectId LocationId { get; set; }
         public ItemLocation Location { get; set; }
         //public List<ObjectId> AncestorIds { get; set; }
         //public ObjectId AssetTypeFilterId { get; set; }

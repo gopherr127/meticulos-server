@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Meticulos.Api.App.Locations;
 
 namespace meticulos_server
 {
@@ -71,6 +72,7 @@ namespace meticulos_server
             // Dependency Injection Registrations
             services.AddTransient<IItemRepository, ItemRepository>();
             services.AddTransient<IItemTypeRepository, ItemTypeRepository>();
+            services.AddTransient<IItemLocationRepository, ItemLocationRepository>();
             services.AddTransient<IScreenRepository, ScreenRepository>();
             services.AddTransient<IFieldRepository, FieldRepository>();
             services.AddTransient<IFieldOptionRepository, FieldOptionRepository>();

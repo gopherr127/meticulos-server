@@ -1,6 +1,7 @@
 ﻿using Meticulos.Api.App.ChangeHistory;
 using Meticulos.Api.App.Fields;
 using Meticulos.Api.App.ItemTypes;
+using Meticulos.Api.App.Locations;
 using Meticulos.Api.App.WorkflowNodes;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -18,24 +19,29 @@ namespace Meticulos.Api.App.Items
         private readonly IItemTypeRepository _itemTypeRepository;
         private readonly IWorkflowNodeRepository _workflowNodeRepository;
         private readonly IFieldChangeGroupRepository _fieldChangeGroupRepository;
+        private readonly IItemLocationRepository _itemLocationRepository;
         private Dictionary<string, ItemType> tempItemTypeCache;
         private Dictionary<string, WorkflowNode> tempWorkflorNodeCache;
+        private Dictionary<string, ItemLocation> tempItemLocationCache;
 
         public ItemRepository(IOptions<Settings> settings,
             IItemTypeRepository itemTypeRepository,
             IWorkflowNodeRepository workflowNodeRepository,
-            IFieldChangeGroupRepository fieldChangeGroupRepository)
+            IFieldChangeGroupRepository fieldChangeGroupRepository,
+            IItemLocationRepository itemLocationRepository)
         {
             _context = new ItemContext(settings);
             _itemTypeRepository = itemTypeRepository;
             _workflowNodeRepository = workflowNodeRepository;
             _fieldChangeGroupRepository = fieldChangeGroupRepository;
+            _itemLocationRepository = itemLocationRepository;
         }
         
         private void ResetTemporaryCaches()
         {
             tempItemTypeCache = new Dictionary<string, ItemType>();
             tempWorkflorNodeCache = new Dictionary<string, WorkflowNode>();
+            tempItemLocationCache = new Dictionary<string, ItemLocation>();
         }
 
         private async Task<Item> HydrateForGetAndSave(Item item)
@@ -53,6 +59,20 @@ namespace Meticulos.Api.App.Items
                     tempItemTypeCache.Add(typeId, itemType);
                 }
                 item.Type = tempItemTypeCache[typeId];
+
+                if (item.LocationId == null && item.LocationId != ObjectId.Empty)
+                {
+                    string locationId = item.LocationId.ToString();
+
+                    if (!tempItemLocationCache.ContainsKey(locationId))
+                    {
+                        var loc = await _itemLocationRepository.Get(item.LocationId);
+                        if (loc == null)
+                            throw new ApplicationException("Invalid Location ID.");
+                        tempItemLocationCache.Add(locationId, loc);
+                    }
+                    item.Location = tempItemLocationCache[locationId];
+                }
 
                 // Populate item's workflow node ID from default node from assoc. item type workflow
                 // if not already set (should only be for new items)
