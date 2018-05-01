@@ -11,10 +11,13 @@ namespace Meticulos.Api.App.WorkflowNodes
     public class WorkflowNodeRepository : IWorkflowNodeRepository
     {
         private readonly WorkflowNodeContext _context = null;
+        private readonly IWorkflowRepository _workflowRepository;
 
-        public WorkflowNodeRepository(IOptions<Settings> settings)
+        public WorkflowNodeRepository(IOptions<Settings> settings,
+            IWorkflowRepository workflowRepository)
         {
             _context = new WorkflowNodeContext(settings);
+            _workflowRepository = workflowRepository;
         }
 
         public async Task<IEnumerable<WorkflowNode>> GetAll()
@@ -64,7 +67,7 @@ namespace Meticulos.Api.App.WorkflowNodes
             {
                 if (item.WorkflowId == null || item.WorkflowId == ObjectId.Empty)
                     throw new ApplicationException("WorkflowId is required.");
-
+                
                 await _context.WorkflowNodes.InsertOneAsync(item);
                 return await Get(item.Id);
             }

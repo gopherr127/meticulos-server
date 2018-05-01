@@ -208,7 +208,7 @@ namespace Meticulos.Api.App.WorkflowTransitions
                 if (node == null)
                     throw new System.Exception("Cannot find destination node.");
                 
-                item.WorkflowNode = node;
+                item.WorkflowNodeId = node.Id;
                 await _itemRepository.Update(item);
 
                 if (result.ErrorMessages.Count > 0)

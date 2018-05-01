@@ -29,6 +29,17 @@ namespace Meticulos.Api.App.WorkflowNodes
             });
         }
 
+        [Route("{id:length(24)}")]
+        [HttpGet]
+        public async Task<IActionResult> Get(string id)
+        {
+            return await FunctionWrapper.ExecuteFunction(this, async () =>
+            {
+
+                return await _workflowNodeRepository.Get(new ObjectId(id));
+            });
+        }
+
         [Route("search")]
         [HttpGet]
         public async Task<IActionResult> Search([FromQuery]WorkflowNodeSearchRequest requestArgs)

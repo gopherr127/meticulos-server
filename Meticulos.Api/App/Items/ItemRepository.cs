@@ -18,6 +18,8 @@ namespace Meticulos.Api.App.Items
         private readonly IItemTypeRepository _itemTypeRepository;
         private readonly IWorkflowNodeRepository _workflowNodeRepository;
         private readonly IFieldChangeGroupRepository _fieldChangeGroupRepository;
+        private Dictionary<string, ItemType> tempItemTypeCache;
+        private Dictionary<string, WorkflowNode> tempWorkflorNodeCache;
 
         public ItemRepository(IOptions<Settings> settings,
             IItemTypeRepository itemTypeRepository,
@@ -29,37 +31,53 @@ namespace Meticulos.Api.App.Items
             _workflowNodeRepository = workflowNodeRepository;
             _fieldChangeGroupRepository = fieldChangeGroupRepository;
         }
-
+        
+        private void ResetTemporaryCaches()
+        {
+            tempItemTypeCache = new Dictionary<string, ItemType>();
+            tempWorkflorNodeCache = new Dictionary<string, WorkflowNode>();
+        }
 
         private async Task<Item> HydrateForGetAndSave(Item item)
         {
             try
             {
-                // Set Ancestor IDs
-                //List<ObjectId> ancestorIds = new List<ObjectId>();
-                //if (item.ParentId != ObjectId.Empty)
-                //{
-                //    var parent = await Get(item.ParentId);
-                //    if (parent == null)
-                //        throw new ApplicationException("Unable to find parent specified.");
-                //    ancestorIds.AddRange(parent.AncestorIds);
-                //}
-                //ancestorIds.Add(item.ParentId);
-                //item.AncestorIds = ancestorIds;
-
                 // Set Type from ID
-                var itemType = await _itemTypeRepository.Get(item.TypeId);
-                item.Type = itemType 
-                    ?? throw new ApplicationException("Invalid Type ID.");
+                string typeId = item.TypeId.ToString();
 
-                if (item.WorkflowNode == null)
+                if (!tempItemTypeCache.ContainsKey(typeId))
                 {
-                    // Set Workflow Node from ItemType's associated Workflow
-                    var workflowNodes = await _workflowNodeRepository.Search(itemType.WorkflowId);
-                    var workflowNode = workflowNodes.FirstOrDefault();
-                    item.WorkflowNode = workflowNode 
-                        ?? throw new ApplicationException("Associated workflow does not have any nodes.");
+                    var itemType = await _itemTypeRepository.Get(item.TypeId);
+                    if (itemType == null)
+                        throw new ApplicationException("Invalid Type ID.");
+                    tempItemTypeCache.Add(typeId, itemType);
                 }
+                item.Type = tempItemTypeCache[typeId];
+
+                // Populate item's workflow node ID from default node from assoc. item type workflow
+                // if not already set (should only be for new items)
+                if (item.WorkflowNodeId == null || item.WorkflowNodeId == ObjectId.Empty)
+                {
+                    if (item.Type.WorkflowId == null || item.Type.WorkflowId == ObjectId.Empty)
+                        throw new ApplicationException("Item does not have an associated workflow.");
+                    var workflowNodes = await _workflowNodeRepository.Search(item.Type.WorkflowId);
+                    var workflowNode = workflowNodes.FirstOrDefault();
+                    if (workflowNode == null)
+                        throw new ApplicationException("Associated workflow does not have any nodes.");
+                    item.WorkflowNodeId = workflowNode.Id;
+                }
+
+                // Set Workflow Node from ItemType's associated Workflow
+                string workflowNodeId = item.WorkflowNodeId.ToString();
+                    
+                if (!tempWorkflorNodeCache.ContainsKey(workflowNodeId))
+                {
+                    var workflowNode = await _workflowNodeRepository.Get(item.WorkflowNodeId);
+                    if (workflowNode == null)
+                        throw new ApplicationException("Cannot find workflow node.");
+                    tempWorkflorNodeCache.Add(workflowNodeId, workflowNode);
+                }
+                item.WorkflowNode = tempWorkflorNodeCache[workflowNodeId];
 
                 return item;
             }
@@ -137,24 +155,18 @@ namespace Meticulos.Api.App.Items
             try
             {
                 var filterConcat = Builders<Item>.Filter.And(filters);
+
+                ResetTemporaryCaches();
+
                 var items = await _context.Items.Find(filterConcat).ToListAsync();
-
-                // Hydrate ItemType for all Items
-                Dictionary<string, ItemType> itemTypeCache = new Dictionary<string, ItemType>();
+                List<Item> itemsToReturn = new List<Item>();
+                
                 foreach (var item in items)
-                {
-                    string typeId = item.TypeId.ToString();
-
-                    if (!itemTypeCache.ContainsKey(typeId))
-                    {
-                        item.Type = await _itemTypeRepository.Get(item.TypeId);
-                    }
-                    else
-                    {
-                        item.Type = itemTypeCache[typeId];
-                    }
+                {   // Hydrate items before returning
+                    itemsToReturn.Add(await HydrateForGet(item));
                 }
-                return items;
+
+                return itemsToReturn;
             }
             catch (Exception ex)
             {
@@ -166,6 +178,8 @@ namespace Meticulos.Api.App.Items
         {
             try
             {
+                ResetTemporaryCaches();
+
                 item = await HydrateForSave(item);
 
                 await _context.Items.InsertOneAsync(item);
@@ -183,6 +197,8 @@ namespace Meticulos.Api.App.Items
 
             try
             {
+                ResetTemporaryCaches();
+
                 item = await HydrateForSave(item);
 
                 //TODO: Move this to a parallel task
