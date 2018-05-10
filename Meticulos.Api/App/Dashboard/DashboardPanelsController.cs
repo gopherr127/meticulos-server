@@ -2,18 +2,18 @@
 using MongoDB.Bson;
 using System.Threading.Tasks;
 
-namespace Meticulos.Api.App.Workflows
+namespace Meticulos.Api.App.Dashboard
 {
     [Route("api/[controller]")]
-    public class WorkflowsController : Controller
+    public class DashboardPanelsController : Controller
     {
-        private readonly IWorkflowRepository _workflowRepository;
+        private readonly IDashboardPanelRepository _dashboardPanelRepository;
 
-        public WorkflowsController(IWorkflowRepository workflowRepository)
+        public DashboardPanelsController(IDashboardPanelRepository dashboardPanelRepository)
         {
-            _workflowRepository = workflowRepository;
+            _dashboardPanelRepository = dashboardPanelRepository;
         }
-        
+
         [Route("{id:length(24)}")]
         [HttpGet]
         public async Task<IActionResult> Get(string id)
@@ -21,7 +21,7 @@ namespace Meticulos.Api.App.Workflows
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
 
-                return await _workflowRepository.Get(new ObjectId(id));
+                return await _dashboardPanelRepository.Get(new ObjectId(id));
             });
         }
         [HttpGet]
@@ -30,39 +30,39 @@ namespace Meticulos.Api.App.Workflows
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
 
-                return await _workflowRepository.GetAll();
+                return await _dashboardPanelRepository.GetAll();
             });
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody]Workflow item)
+        public async Task<IActionResult> Post([FromBody]DashboardPanel item)
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
 
-                if (string.IsNullOrEmpty(item.Name))
+                if (string.IsNullOrEmpty(item.Title))
                 {
                     throw new System.Exception("Required fields not supplied.");
                 }
 
-                return await _workflowRepository.Add(item);
+                return await _dashboardPanelRepository.Add(item);
             });
         }
 
         [Route("{id:length(24)}")]
         [HttpPut]
-        public async Task<IActionResult> Put(string id, [FromBody]Workflow item)
+        public async Task<IActionResult> Put(string id, [FromBody]DashboardPanel item)
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
 
-                if (string.IsNullOrEmpty(item.Name))
+                if (string.IsNullOrEmpty(item.Title))
                 {
                     throw new System.Exception("Required fields not supplied.");
                 }
 
                 item.Id = new ObjectId(id);
-                return await _workflowRepository.Update(item);
+                return await _dashboardPanelRepository.Update(item);
             });
         }
 
@@ -73,7 +73,7 @@ namespace Meticulos.Api.App.Workflows
             return await FunctionWrapper.ExecuteAction(this, async () =>
             {
 
-                await _workflowRepository.Delete(new ObjectId(id));
+                await _dashboardPanelRepository.Delete(new ObjectId(id));
             });
         }
     }

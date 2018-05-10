@@ -48,6 +48,9 @@ namespace Meticulos.Api.App.Items
         {
             try
             {
+                // Clear linked items as they should not be saved
+                item.LinkedItems = null;
+
                 // Set Type from ID
                 string typeId = item.TypeId.ToString();
 
@@ -113,6 +116,15 @@ namespace Meticulos.Api.App.Items
             {
                 item = await HydrateForGetAndSave(item);
 
+                if (item.LinkedItemIds != null && item.LinkedItemIds.Count > 0)
+                {
+                    item.LinkedItems = new List<Item>();
+                    foreach (ObjectId linkedItemId in item.LinkedItemIds)
+                    {
+                        item.LinkedItems.Add(await Get(linkedItemId));
+                    }
+                }
+
                 return item;
             }
             catch (Exception ex)
@@ -153,8 +165,11 @@ namespace Meticulos.Api.App.Items
 
             try
             {
-                var result = await _context.Items.Find(filter).FirstOrDefaultAsync();
-                return result;
+
+                var item = await _context.Items.Find(filter).FirstOrDefaultAsync();
+                ResetTemporaryCaches();
+                await HydrateForGet(item);
+                return item;
             }
             catch (Exception ex)
             {
@@ -170,7 +185,12 @@ namespace Meticulos.Api.App.Items
             if (!string.IsNullOrEmpty(request.ParentId))
                 filters.Add(Builders<Item>.Filter.Eq("ParentId", new ObjectId(request.ParentId)));
             if (!string.IsNullOrEmpty(request.Name))
-                filters.Add(Builders<Item>.Filter.Eq("Name", request.Name));
+                filters.Add(Builders<Item>.Filter.Regex("Name", new BsonRegularExpression($".*{request.Name}.*")));
+            if (!string.IsNullOrEmpty(request.Json))
+            {
+                filters.Clear(); // For now, I see no reason to support both Json filtering and explicit field filtering
+                filters.Add(new JsonFilterDefinition<Item>(request.Json));
+            }
 
             try
             {
@@ -183,7 +203,7 @@ namespace Meticulos.Api.App.Items
                 
                 foreach (var item in items)
                 {   // Hydrate items before returning
-                    itemsToReturn.Add(await HydrateForGet(item));
+                    itemsToReturn.Add(await HydrateForGetAndSave(item));
                 }
 
                 return itemsToReturn;
@@ -221,7 +241,6 @@ namespace Meticulos.Api.App.Items
 
                 item = await HydrateForSave(item);
 
-                //TODO: Move this to a parallel task
                 // Compare old and new, save to change history
                 var oldItem = await Get(item.Id);
                 var newItem = item;

@@ -13,10 +13,8 @@ namespace Meticulos.Api.App.Items
         public ItemLocation Location { get; set; }
         //public List<ObjectId> AncestorIds { get; set; }
         //public ObjectId AssetTypeFilterId { get; set; }
-
-        //TODO: Rename the following to LinkedItemIds
-        //public List<ObjectId> AssetIds { get; set; }
-
+        public List<ObjectId> LinkedItemIds { get; set; }
+        public List<Item> LinkedItems { get; set; }
         //public List<ObjectId> AllowedRoles { get; set; }
         public string Name { get; set; }
         public ObjectId TypeId { get; set; }

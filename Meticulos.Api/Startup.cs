@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Meticulos.Api.App.Locations;
+using Meticulos.Api.App.Dashboard;
 
 namespace meticulos_server
 {
@@ -70,6 +71,7 @@ namespace meticulos_server
             });
 
             // Dependency Injection Registrations
+            services.AddTransient<IDashboardPanelRepository, DashboardPanelRepository>();
             services.AddTransient<IItemRepository, ItemRepository>();
             services.AddTransient<IItemTypeRepository, ItemTypeRepository>();
             services.AddTransient<IItemLocationRepository, ItemLocationRepository>();
