@@ -19,6 +19,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Meticulos.Api.App.Locations;
 using Meticulos.Api.App.Dashboard;
+using Meticulos.Api.App.AppUsers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 
 namespace meticulos_server
 {
@@ -58,19 +61,46 @@ namespace meticulos_server
                     settings.Converters = new List<JsonConverter> { new ObjectIdConverter() };
                 });
 
+            // Auth0 Configuration
+            string domain = $"https://{Configuration["Auth0:Domain"]}/";
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.Authority = domain;
+                options.Audience = Configuration["Auth0:ApiIdentifier"];
+            });
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("read:projects", policy =>
+                    policy.Requirements.Add(new HasScopeRequirement("read:projects", domain)));
+                options.AddPolicy("modify:projects", policy =>
+                    policy.Requirements.Add(new HasScopeRequirement("modify:projects", domain)));
+                options.AddPolicy("delete:projects", policy =>
+                    policy.Requirements.Add(new HasScopeRequirement("delete:projects", domain)));
+            });
+
+            // register the scope authorization handler
+            services.AddSingleton<IAuthorizationHandler, HasScopeHandler>();
+
             services.AddSingleton(Configuration);
 
             // Supply access to the Settings.cs file for application settings
             services.Configure<Settings>(options =>
             {
                 //options.ConnectionString = Configuration.GetSection("MongoConnection:ConnectionString").Value;
-                options.ConnectionString = Configuration.GetSection("ConnectionStrings:Mongo:ConnectionString").Value;
-                options.Database = Configuration.GetSection("MongoConnection:Database").Value;
+                options.ConnectionString = Configuration["ConnectionStrings:Mongo:ConnectionString"];
+                options.DefaultDatabase = Configuration["MongoConnection:Database"];
                 options.TheNounProject_ConsumerKey = "154191dca3c842dea2b447c49cb1888b";
                 options.TheNounProject_ConsumerKeySecret = "3d3c23d79b5e46f0a66bbdaf22a51c08";
             });
 
             // Dependency Injection Registrations
+            services.AddTransient<IAppUserRepository, AppUserRepository>();
             services.AddTransient<IDashboardPanelRepository, DashboardPanelRepository>();
             services.AddTransient<IItemRepository, ItemRepository>();
             services.AddTransient<IItemTypeRepository, ItemTypeRepository>();
@@ -94,6 +124,16 @@ namespace meticulos_server
             {
                 app.UseDeveloperExceptionPage();
             }
+            else
+            {
+                //TODO: app.UseExceptionHandler("...rel path to error page...");
+            }
+
+            app.UseStaticFiles();
+
+            // Auth0 Configuration
+            app.UseAuthentication();
+
 
             app.UseCors("AllowAllHeaders");
 

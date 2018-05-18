@@ -9,7 +9,7 @@ namespace Meticulos.Api.App.Fields
 
         public IMongoCollection<Field> Fields
         {
-            get { return Database.GetCollection<Field>("Fields"); }
+            get { return DefaultDatabase.GetCollection<Field>("Fields"); }
         }
     }
 }

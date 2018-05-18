@@ -9,7 +9,7 @@ namespace Meticulos.Api.App.ChangeHistory
         
         public IMongoCollection<FieldChangeGroup> FieldChangeGroups
         {
-            get { return Database.GetCollection<FieldChangeGroup>("FieldChangeGroups"); }
+            get { return DefaultDatabase.GetCollection<FieldChangeGroup>("FieldChangeGroups"); }
         }
     }
 }

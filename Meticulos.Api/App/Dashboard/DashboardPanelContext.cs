@@ -9,7 +9,7 @@ namespace Meticulos.Api.App.Dashboard
 
         public IMongoCollection<DashboardPanel> DashboardPanels
         {
-            get { return Database.GetCollection<DashboardPanel>("DashboardPanels"); }
+            get { return DefaultDatabase.GetCollection<DashboardPanel>("DashboardPanels"); }
         }
     }
 }

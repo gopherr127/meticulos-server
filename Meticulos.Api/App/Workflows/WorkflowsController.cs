@@ -20,16 +20,15 @@ namespace Meticulos.Api.App.Workflows
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
                 return await _workflowRepository.Get(new ObjectId(id));
             });
         }
+
         [HttpGet]
         public async Task<IActionResult> Get()
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
                 return await _workflowRepository.GetAll();
             });
         }
@@ -39,12 +38,6 @@ namespace Meticulos.Api.App.Workflows
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
-                if (string.IsNullOrEmpty(item.Name))
-                {
-                    throw new System.Exception("Required fields not supplied.");
-                }
-
                 return await _workflowRepository.Add(item);
             });
         }
@@ -55,12 +48,6 @@ namespace Meticulos.Api.App.Workflows
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
-                if (string.IsNullOrEmpty(item.Name))
-                {
-                    throw new System.Exception("Required fields not supplied.");
-                }
-
                 item.Id = new ObjectId(id);
                 return await _workflowRepository.Update(item);
             });
@@ -72,7 +59,6 @@ namespace Meticulos.Api.App.Workflows
         {
             return await FunctionWrapper.ExecuteAction(this, async () =>
             {
-
                 await _workflowRepository.Delete(new ObjectId(id));
             });
         }

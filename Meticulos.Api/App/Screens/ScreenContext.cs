@@ -9,7 +9,7 @@ namespace Meticulos.Api.App.Screens
 
         public IMongoCollection<Screen> Screens
         {
-            get { return Database.GetCollection<Screen>("Screens"); }
+            get { return DefaultDatabase.GetCollection<Screen>("Screens"); }
         }
     }
 }

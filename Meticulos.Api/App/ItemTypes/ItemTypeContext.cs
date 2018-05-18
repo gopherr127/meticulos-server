@@ -9,7 +9,7 @@ namespace Meticulos.Api.App.ItemTypes
 
         public IMongoCollection<ItemType> ItemTypes
         {
-            get { return Database.GetCollection<ItemType>("ItemTypes"); }
+            get { return DefaultDatabase.GetCollection<ItemType>("ItemTypes"); }
         }
     }
 }

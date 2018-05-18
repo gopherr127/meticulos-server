@@ -9,7 +9,7 @@ namespace Meticulos.Api.App.WorkflowFunctions
 
         public IMongoCollection<WorkflowFunction> WorkflowFunctions
         {
-            get { return Database.GetCollection<WorkflowFunction>("WorkflowFunctions"); }
+            get { return DefaultDatabase.GetCollection<WorkflowFunction>("WorkflowFunctions"); }
         }
     }
 }

@@ -20,7 +20,6 @@ namespace Meticulos.Api.App.Dashboard
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
                 return await _dashboardPanelRepository.Get(new ObjectId(id));
             });
         }
@@ -39,12 +38,6 @@ namespace Meticulos.Api.App.Dashboard
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
-                if (string.IsNullOrEmpty(item.Title))
-                {
-                    throw new System.Exception("Required fields not supplied.");
-                }
-
                 return await _dashboardPanelRepository.Add(item);
             });
         }
@@ -55,12 +48,6 @@ namespace Meticulos.Api.App.Dashboard
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
-                if (string.IsNullOrEmpty(item.Title))
-                {
-                    throw new System.Exception("Required fields not supplied.");
-                }
-
                 item.Id = new ObjectId(id);
                 return await _dashboardPanelRepository.Update(item);
             });

@@ -9,7 +9,7 @@ namespace Meticulos.Api.App.WorkflowTransitionFunctions
 
         public IMongoCollection<WorkflowTransitionFunction> WorkflowTransitionFunctions
         {
-            get { return Database.GetCollection<WorkflowTransitionFunction>("WorkflowTransitionFunctions"); }
+            get { return DefaultDatabase.GetCollection<WorkflowTransitionFunction>("WorkflowTransitionFunctions"); }
         }
     }
 }
