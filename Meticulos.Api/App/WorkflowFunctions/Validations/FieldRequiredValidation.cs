@@ -25,6 +25,15 @@ namespace Meticulos.Api.App.WorkflowFunctions.Validations
         {
             return Task.Run( async () =>
             {
+                if (_item == null)
+                {
+                    return new OperationResult<bool>()
+                    {
+                        Value = false,
+                        ErrorMessage = "Item is required."
+                    };
+                }
+
                 List<string> validationErrors = new List<string>();
 
                 FieldRequiredValidationArgs args =

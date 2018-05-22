@@ -139,6 +139,20 @@ namespace Meticulos.Api.App.Items
             {
                 item = await HydrateForGetAndSave(item);
 
+                if (item.ParentId != null && item.ParentId != ObjectId.Empty)
+                {   // Hydrate Ancestor ID list
+                    var parent = await Get(item.ParentId);
+                    if (parent != null)
+                    {
+                        item.AncestorIds = new List<ObjectId>();
+                        if (parent.AncestorIds != null)
+                        {
+                            item.AncestorIds = parent.AncestorIds;
+                        }
+                        item.AncestorIds.Add(item.ParentId);
+                    }
+                }
+
                 return item;
             }
             catch (Exception ex)

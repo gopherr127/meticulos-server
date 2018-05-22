@@ -8,6 +8,7 @@ using Meticulos.Api.App.WorkflowTransitionFunctions;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Newtonsoft.Json;
+using System;
 using System.Threading.Tasks;
 
 namespace Meticulos.Api.App.WorkflowTransitions
@@ -188,10 +189,21 @@ namespace Meticulos.Api.App.WorkflowTransitions
                                     var execResult = await new MakeApiCallPostFunction()
                                         .Execute(JsonConvert.SerializeObject(functionArgs));
 
-                                    //TODO: Add display message to failure notification, not validation results
-                                    // since we're past the point of validating something...this is just an error.
                                     if (execResult.IsFailure)
-                                        result.ErrorMessages.Add(execResult.DisplayMessage);
+                                        throw new ApplicationException(execResult.DisplayMessage);
+
+                                    break;
+                                }
+                            case "5aa805df0af6814a103b25b2":
+                                {   // Set Field Value
+                                    var functionArgs = JsonConvert.DeserializeObject<SetFieldValuePostFunctionArgs>(funcRef.FunctionArgs);
+
+                                    var execResult = await new SetFieldValuePostFunction(_fieldRepository, _itemRepository, item)
+                                        .Execute(JsonConvert.SerializeObject(functionArgs));
+
+                                    if (execResult.IsFailure)
+                                        throw new ApplicationException(execResult.DisplayMessage);
+
                                     break;
                                 }
                             default:
