@@ -196,10 +196,18 @@ namespace Meticulos.Api.App.WorkflowTransitions
                                 }
                             case "5aa805df0af6814a103b25b2":
                                 {   // Set Field Value
-                                    var functionArgs = JsonConvert.DeserializeObject<SetFieldValuePostFunctionArgs>(funcRef.FunctionArgs);
-
                                     var execResult = await new SetFieldValuePostFunction(_fieldRepository, _itemRepository, item)
-                                        .Execute(JsonConvert.SerializeObject(functionArgs));
+                                        .Execute(funcRef.FunctionArgs);
+
+                                    if (execResult.IsFailure)
+                                        throw new ApplicationException(execResult.DisplayMessage);
+
+                                    break;
+                                }
+                            case "5aa805e00af6814a103b25b3":
+                                {
+                                    var execResult = await new SendEmailPostFunction(item)
+                                        .Execute(funcRef.FunctionArgs);
 
                                     if (execResult.IsFailure)
                                         throw new ApplicationException(execResult.DisplayMessage);
