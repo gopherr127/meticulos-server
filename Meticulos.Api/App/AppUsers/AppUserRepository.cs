@@ -31,31 +31,31 @@ namespace Meticulos.Api.App.AppUsers
             }
         }
 
-        public async Task<AppUser> Authenticate(AppUser user)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(user.EmailAddress)
-                    || string.IsNullOrEmpty(user.Password))
-                    throw new ApplicationException("Invalid credentials provided.");
+        //public async Task<AppUser> Authenticate(AppUser user)
+        //{
+        //    try
+        //    {
+        //        if (string.IsNullOrEmpty(user.Email)
+        //            || string.IsNullOrEmpty(user.Password))
+        //            throw new ApplicationException("Invalid credentials provided.");
 
-                List<FilterDefinition<AppUser>> filters = new List<FilterDefinition<AppUser>>();
-                filters.Add(Builders<AppUser>.Filter.Eq("EmailAddress", new ObjectId(user.EmailAddress)));
-                filters.Add(Builders<AppUser>.Filter.Eq("Password", new ObjectId(user.Password)));
+        //        List<FilterDefinition<AppUser>> filters = new List<FilterDefinition<AppUser>>();
+        //        filters.Add(Builders<AppUser>.Filter.Eq("EmailAddress", new ObjectId(user.Email)));
+        //        filters.Add(Builders<AppUser>.Filter.Eq("Password", new ObjectId(user.Password)));
 
-                var filterConcat = Builders<AppUser>.Filter.And(filters);
-                var findResults = await _context.AppUsers.Find(filterConcat).ToListAsync();
+        //        var filterConcat = Builders<AppUser>.Filter.And(filters);
+        //        var findResults = await _context.AppUsers.Find(filterConcat).ToListAsync();
 
-                if (findResults == null || findResults.Count < 1)
-                    throw new ApplicationException("Invalid credentials provided.");
+        //        if (findResults == null || findResults.Count < 1)
+        //            throw new ApplicationException("Invalid credentials provided.");
 
-                return findResults.FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
+        //        return findResults.FirstOrDefault();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw ex;
+        //    }
+        //}
 
         public async Task<List<AppUser>> Search(AppUserSearchRequest request)
         {
@@ -74,29 +74,29 @@ namespace Meticulos.Api.App.AppUsers
             }
         }
 
-        public async Task<AppUser> Add(AppUser user)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(user.EmailAddress)
-                    || string.IsNullOrEmpty(user.Password))
-                    throw new ApplicationException("Required fields not supplied.");
+        //public async Task<AppUser> Add(AppUser user)
+        //{
+        //    try
+        //    {
+        //        if (string.IsNullOrEmpty(user.Email)
+        //            || string.IsNullOrEmpty(user.Password))
+        //            throw new ApplicationException("Required fields not supplied.");
 
-                if (string.IsNullOrEmpty(user.DisplayName))
-                    user.DisplayName = user.EmailAddress;
+        //        if (string.IsNullOrEmpty(user.Name))
+        //            user.Name = user.Email;
 
-                var searchResult = await Search(new AppUserSearchRequest() { EmailAddress = user.EmailAddress });
-                if (searchResult.Count > 0)
-                    throw new ApplicationException("User account already exists with that email address.");
+        //        var searchResult = await Search(new AppUserSearchRequest() { EmailAddress = user.Email });
+        //        if (searchResult.Count > 0)
+        //            throw new ApplicationException("User account already exists with that email address.");
 
-                await _context.AppUsers.InsertOneAsync(user);
-                return await Get(user.Id);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
+        //        await _context.AppUsers.InsertOneAsync(user);
+        //        return await Get(user.Id);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw ex;
+        //    }
+        //}
 
         public async Task<AppUser> Update(AppUser user)
         {
