@@ -8,7 +8,7 @@ namespace Meticulos.Api.App.Items
     {
         Task<Item> Add(Item item);
         Task Delete(ObjectId id);
-        Task<Item> Get(ObjectId id);
+        Task<Item> Get(ObjectId id, ItemExpansionParams expand);
         Task<IEnumerable<Item>> GetAll();
         Task<List<Item>> Search(ItemSearchRequest request);
         Task<Item> Update(Item item);

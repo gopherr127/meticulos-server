@@ -1,5 +1,7 @@
 ﻿using Meticulos.Api.App.Fields;
 using Meticulos.Api.App.Items;
+using Meticulos.Api.App.ItemTypes;
+using Meticulos.Api.App.WorkflowFunctions;
 using Meticulos.Api.App.WorkflowFunctions.PostFunctions;
 using Meticulos.Api.App.WorkflowFunctions.PreConditions;
 using Meticulos.Api.App.WorkflowFunctions.Validations;
@@ -17,18 +19,24 @@ namespace Meticulos.Api.App.WorkflowTransitions
     public class WorkflowTransitionsController : Controller
     {
         private readonly IWorkflowTransitionRepository _workflowTransitionRepository;
+        //private readonly IFunctionRegistry _functionRegistry;
         private readonly IItemRepository _itemRepository;
+        private readonly IItemTypeRepository _itemTypeRepository;
         private readonly IWorkflowNodeRepository _workflowNodeRepository;
         private readonly IFieldRepository _fieldRepository;
 
         public WorkflowTransitionsController(
             IWorkflowTransitionRepository workflowTransitionRepository,
+            //IFunctionRegistry functionRegistry,
             IItemRepository itemRepository,
+            IItemTypeRepository itemTypeRepository,
             IWorkflowNodeRepository workflowNodeRepository,
             IFieldRepository fieldRepository)
         {
             _workflowTransitionRepository = workflowTransitionRepository;
+            //_functionRegistry = functionRegistry;
             _itemRepository = itemRepository;
+            _itemTypeRepository = itemTypeRepository;
             _workflowNodeRepository = workflowNodeRepository;
             _fieldRepository = fieldRepository;
         }
@@ -53,7 +61,7 @@ namespace Meticulos.Api.App.WorkflowTransitions
                 return await _workflowTransitionRepository.Get(new ObjectId(id));
             });
         }
-
+        
         [Route("search")]
         [HttpGet]
         public async Task<IActionResult> Search([FromQuery]WorkflowTransitionSearchRequest requestArgs)
@@ -86,88 +94,62 @@ namespace Meticulos.Api.App.WorkflowTransitions
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
                 // This method assumes that a client has recognized the need to display screens
                 // in order to populate all required fields or make any field updates to the item in transition
 
                 if (string.IsNullOrEmpty(requestArgs.ItemId))
                 {
-                    throw new System.Exception("Required fields not supplied.");
+                    throw new Exception("Required fields not supplied.");
                 }
 
                 Item item = null;
                 string serializedObject = "";
 
-                item = await _itemRepository.Get(new ObjectId(requestArgs.ItemId));
+                item = await _itemRepository.Get(new ObjectId(requestArgs.ItemId), null);
+
+                if (item == null)
+                    throw new Exception("Cannot find item specified.");
+
+                //TODO: Verify that the transition is valid for the item's current state/node
+
                 serializedObject = JsonConvert.SerializeObject(item);
                 
-                if (item == null)
-                    throw new System.Exception("Cannot find item specified.");
-
                 var transition = await _workflowTransitionRepository.Get(new ObjectId(id));
 
                 if (transition == null)
-                    throw new System.Exception("Cannot find transition.");
+                    throw new Exception("Cannot find transition.");
 
+                FunctionRegistry functionRegistry = new FunctionRegistry(
+                    _itemRepository, _itemTypeRepository, _fieldRepository, _workflowNodeRepository);
                 WorkflowTransitionExecutionResult result = new WorkflowTransitionExecutionResult();
 
                 if (transition.PreConditions != null)
-                {
+                {   // Execute all pre-conditions for the transition
                     foreach (WorkflowTransitionFunction funcRef in transition.PreConditions)
                     {
-                        switch (funcRef.FunctionId.ToString())
-                        {   //TODO: Extract this mapping to a config file
-                            case "5aa805dd0af6814a103b25ad":
-                                {
-                                    var execResult = await new UserInRolePreCondition().Execute(funcRef.FunctionArgs);
-                                    if (execResult.IsFailure)
-                                        result.ErrorMessages.Add(execResult.DisplayMessage);
-                                    break;
-                                }
-                            case "5aa805dd0af6814a103b25ae":
-                                {
-                                    var execResult = await new UserInGroupPreCondition().Execute(funcRef.FunctionArgs);
-                                    if (execResult.IsFailure)
-                                        result.ErrorMessages.Add(execResult.DisplayMessage);
-                                    break;
-                                }
-                            default:
-                                {
-                                    break;
-                                }
-                        }
+                        var execResult = await functionRegistry.ExecuteFunction(funcRef, item);
+
+                        if (execResult.IsFailure)
+                            result.ErrorMessages.Add(execResult.DisplayMessage);
                     }
                 }
 
+                // Stop now if any conditions fail
                 if (result.ErrorMessages.Count > 0)
                     return result;
 
                 if (transition.Validations != null)
-                {
+                {   // Execute all validations for the transition
                     foreach (WorkflowTransitionFunction funcRef in transition.Validations)
                     {
-                        switch (funcRef.FunctionId.ToString())
-                        {
-                            case "5aa805de0af6814a103b25b0":
-                                {
-                                    var functionArgs = JsonConvert
-                                        .DeserializeObject<FieldRequiredValidationArgs>(funcRef.FunctionArgs);
-                                    
-                                    var execResult = await new FieldRequiredValidation(_fieldRepository, item)
-                                        .Execute(JsonConvert.SerializeObject(functionArgs));
+                        var execResult = await functionRegistry.ExecuteFunction(funcRef, item);
 
-                                    if (execResult.IsFailure)
-                                        result.ErrorMessages.Add(execResult.DisplayMessage);
-                                    break;
-                                }
-                            default:
-                                {
-                                    break;
-                                }
-                        }
+                        if (execResult.IsFailure)
+                            result.ErrorMessages.Add(execResult.DisplayMessage);
                     }
                 }
 
+                // Stop now if any validations fail
                 if (result.ErrorMessages.Count > 0)
                     return result;
 
@@ -175,50 +157,10 @@ namespace Meticulos.Api.App.WorkflowTransitions
                 {
                     foreach (WorkflowTransitionFunction funcRef in transition.PostFunctions)
                     {
-                        switch (funcRef.FunctionId.ToString())
-                        {
-                            case "5aa805e00af6814a103b25b5":
-                                {   // Make API call
-                                    var functionArgs = JsonConvert.DeserializeObject<MakeApiCallPostFunctionArgs>(funcRef.FunctionArgs);
+                        var execResult = await functionRegistry.ExecuteFunction(funcRef, item);
 
-                                    if (functionArgs.IncludePayload)
-                                    {   // Inject the item undergoing transition into the payload for this function
-                                        functionArgs.Payload = serializedObject;
-                                    }
-
-                                    var execResult = await new MakeApiCallPostFunction()
-                                        .Execute(JsonConvert.SerializeObject(functionArgs));
-
-                                    if (execResult.IsFailure)
-                                        throw new ApplicationException(execResult.DisplayMessage);
-
-                                    break;
-                                }
-                            case "5aa805df0af6814a103b25b2":
-                                {   // Set Field Value
-                                    var execResult = await new SetFieldValuePostFunction(_fieldRepository, _itemRepository, item)
-                                        .Execute(funcRef.FunctionArgs);
-
-                                    if (execResult.IsFailure)
-                                        throw new ApplicationException(execResult.DisplayMessage);
-
-                                    break;
-                                }
-                            case "5aa805e00af6814a103b25b3":
-                                {
-                                    var execResult = await new SendEmailPostFunction(item)
-                                        .Execute(funcRef.FunctionArgs);
-
-                                    if (execResult.IsFailure)
-                                        throw new ApplicationException(execResult.DisplayMessage);
-
-                                    break;
-                                }
-                            default:
-                                {
-                                    break;
-                                }
-                        }
+                        if (execResult.IsFailure)
+                            throw new ApplicationException(execResult.DisplayMessage);
                     }
                 }
 
@@ -226,7 +168,7 @@ namespace Meticulos.Api.App.WorkflowTransitions
                 // transitions that simply return to the same status just to execute functions?)
                 WorkflowNode node = await _workflowNodeRepository.Get(transition.ToNodeId);
                 if (node == null)
-                    throw new System.Exception("Cannot find destination node.");
+                    throw new Exception("Cannot find destination node.");
                 
                 item.WorkflowNodeId = node.Id;
                 await _itemRepository.Update(item);

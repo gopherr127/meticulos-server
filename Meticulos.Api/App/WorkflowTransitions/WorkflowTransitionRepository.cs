@@ -29,54 +29,6 @@ namespace Meticulos.Api.App.WorkflowTransitions
             _screenRepository = screenRepository;
         }
         
-        public async Task<IEnumerable<WorkflowTransition>> GetAll()
-        {
-            try
-            {
-                return await _context.WorkflowTransitions.Find(_ => true).ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        public async Task<IEnumerable<WorkflowTransition>> Search(WorkflowTransitionSearchRequest requestArgs)
-        {
-            List<FilterDefinition<WorkflowTransition>> filters = new List<FilterDefinition<WorkflowTransition>>();
-            if (!string.IsNullOrEmpty(requestArgs.WorkflowId))
-                filters.Add(Builders<WorkflowTransition>.Filter.Eq("WorkflowId", new ObjectId(requestArgs.WorkflowId)));
-            if (!string.IsNullOrEmpty(requestArgs.FromNodeId))
-                filters.Add(Builders<WorkflowTransition>.Filter.Eq("FromNodeId", new ObjectId(requestArgs.FromNodeId)));
-
-            try
-            {
-                var filterConcat = Builders<WorkflowTransition>.Filter.And(filters);
-                return await _context.WorkflowTransitions.Find(filterConcat).ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        public async Task<WorkflowTransition> Get(ObjectId id)
-        {
-            var filter = Builders<WorkflowTransition>.Filter.Eq("Id", id);
-
-            try
-            {
-                // See TODO up above for refactoring effort
-                var transition = await _context.WorkflowTransitions.Find(filter).FirstOrDefaultAsync();
-                transition = await HydrateForGet(transition);
-                return transition;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
         private async Task<WorkflowTransition> HydrateForGetAndSave(WorkflowTransition transition)
         {
             try
@@ -137,6 +89,61 @@ namespace Meticulos.Api.App.WorkflowTransitions
             {
                 transition = await HydrateForGetAndSave(transition);
 
+                return transition;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public async Task<IEnumerable<WorkflowTransition>> GetAll()
+        {
+            try
+            {
+                return await _context.WorkflowTransitions.Find(_ => true).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public async Task<IEnumerable<WorkflowTransition>> Search(WorkflowTransitionSearchRequest requestArgs)
+        {
+            List<FilterDefinition<WorkflowTransition>> filters = new List<FilterDefinition<WorkflowTransition>>();
+            if (!string.IsNullOrEmpty(requestArgs.WorkflowId))
+                filters.Add(Builders<WorkflowTransition>.Filter.Eq("WorkflowId", new ObjectId(requestArgs.WorkflowId)));
+            if (!string.IsNullOrEmpty(requestArgs.FromNodeId))
+                filters.Add(Builders<WorkflowTransition>.Filter.Eq("FromNodeId", new ObjectId(requestArgs.FromNodeId)));
+
+            try
+            {
+                var filterConcat = Builders<WorkflowTransition>.Filter.And(filters);
+                var transitions = await _context.WorkflowTransitions.Find(filterConcat).ToListAsync();
+
+                foreach (WorkflowTransition transition in transitions)
+                {
+                    await HydrateForGet(transition);
+                }
+
+                return transitions;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public async Task<WorkflowTransition> Get(ObjectId id)
+        {
+            var filter = Builders<WorkflowTransition>.Filter.Eq("Id", id);
+
+            try
+            {
+                // See TODO up above for refactoring effort
+                var transition = await _context.WorkflowTransitions.Find(filter).FirstOrDefaultAsync();
+                transition = await HydrateForGet(transition);
                 return transition;
             }
             catch (Exception ex)

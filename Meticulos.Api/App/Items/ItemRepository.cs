@@ -2,7 +2,10 @@
 using Meticulos.Api.App.Fields;
 using Meticulos.Api.App.ItemTypes;
 using Meticulos.Api.App.Locations;
+using Meticulos.Api.App.WorkflowFunctions;
 using Meticulos.Api.App.WorkflowNodes;
+using Meticulos.Api.App.WorkflowTransitionFunctions;
+using Meticulos.Api.App.WorkflowTransitions;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -18,8 +21,11 @@ namespace Meticulos.Api.App.Items
         private readonly ItemContext _context = null;
         private readonly IItemTypeRepository _itemTypeRepository;
         private readonly IWorkflowNodeRepository _workflowNodeRepository;
+        //private readonly IFieldRepository _fieldRepository;
         private readonly IFieldChangeGroupRepository _fieldChangeGroupRepository;
         private readonly IItemLocationRepository _itemLocationRepository;
+        private readonly IWorkflowTransitionRepository _workflowTransitionRepository;
+        //private readonly IFunctionRegistry _functionRegistry; <-- causes circular dependency
         private Dictionary<string, ItemType> tempItemTypeCache;
         private Dictionary<string, WorkflowNode> tempWorkflorNodeCache;
         private Dictionary<string, ItemLocation> tempItemLocationCache;
@@ -27,14 +33,18 @@ namespace Meticulos.Api.App.Items
         public ItemRepository(IOptions<Settings> settings,
             IItemTypeRepository itemTypeRepository,
             IWorkflowNodeRepository workflowNodeRepository,
+            //IFieldRepository fieldRepository,
             IFieldChangeGroupRepository fieldChangeGroupRepository,
-            IItemLocationRepository itemLocationRepository)
+            IItemLocationRepository itemLocationRepository,
+            IWorkflowTransitionRepository workflowTransitionRepository)
         {
             _context = new ItemContext(settings);
             _itemTypeRepository = itemTypeRepository;
             _workflowNodeRepository = workflowNodeRepository;
+            //_fieldRepository = fieldRepository;
             _fieldChangeGroupRepository = fieldChangeGroupRepository;
             _itemLocationRepository = itemLocationRepository;
+            _workflowTransitionRepository = workflowTransitionRepository;
         }
         
         private void ResetTemporaryCaches()
@@ -110,18 +120,64 @@ namespace Meticulos.Api.App.Items
             }
         }
 
-        private async Task<Item> HydrateForGet(Item item)
+        private async Task<Item> HydrateForGet(Item item, ItemExpansionParams expand)
         {
             try
             {
                 item = await HydrateForGetAndSave(item);
-
-                if (item.LinkedItemIds != null && item.LinkedItemIds.Count > 0)
+                
+                if (expand.LinkedItems)
                 {
-                    item.LinkedItems = new List<Item>();
-                    foreach (ObjectId linkedItemId in item.LinkedItemIds)
+                    if (item.LinkedItemIds != null && item.LinkedItemIds.Count > 0)
                     {
-                        item.LinkedItems.Add(await Get(linkedItemId));
+                        item.LinkedItems = new List<Item>();
+                        foreach (ObjectId linkedItemId in item.LinkedItemIds)
+                        {
+                            if (item.LinkedItems == null)
+                                item.LinkedItems = new List<Item>();
+                            item.LinkedItems.Add(await Get(linkedItemId));
+                        }
+                    }
+                }
+
+                if (expand.Transitions)
+                {
+                    var funcReg = new FunctionRegistry(this,
+                        _itemTypeRepository, null, _workflowNodeRepository);
+
+                    var nodeTransitions = await _workflowTransitionRepository
+                        .Search(new WorkflowTransitionSearchRequest()
+                        {
+                            FromNodeId = item.WorkflowNodeId.ToString()
+                        });
+
+                    // Test each transitions conditions for applicability to the item
+                    foreach (WorkflowTransition transition in nodeTransitions)
+                    {
+                        bool anyFailedConditions = false;
+
+                        if (transition.PreConditions == null)
+                            transition.PreConditions = new List<WorkflowTransitionFunction>();
+
+                        foreach (WorkflowTransitionFunction condition in transition.PreConditions)
+                        {
+                            var execResult = await funcReg
+                                .ExecuteFunction(condition, item);
+
+                            if (execResult.IsFailure)
+                            {
+                                anyFailedConditions = true;
+                                break;
+                            }
+                        }
+
+                        if (!anyFailedConditions)
+                        {
+                            if (item.Transitions == null)
+                                item.Transitions = new List<WorkflowTransition>();
+
+                            item.Transitions.Add(transition);
+                        }
                     }
                 }
 
@@ -173,16 +229,18 @@ namespace Meticulos.Api.App.Items
             }
         }
 
-        public async Task<Item> Get(ObjectId id)
+        public async Task<Item> Get(ObjectId id, ItemExpansionParams expand = null)
         {
             var filter = Builders<Item>.Filter.Eq("Id", id);
 
+            if (expand == null)
+                expand = new ItemExpansionParams(null);
+
             try
             {
-
                 var item = await _context.Items.Find(filter).FirstOrDefaultAsync();
                 ResetTemporaryCaches();
-                await HydrateForGet(item);
+                await HydrateForGet(item, expand);
                 return item;
             }
             catch (Exception ex)

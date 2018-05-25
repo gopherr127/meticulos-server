@@ -20,19 +20,17 @@ namespace Meticulos.Api.App.Items
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
                 return await _itemRepository.GetAll();
             });
         }
 
         [Route("{id:length(24)}")]
         [HttpGet]
-        public async Task<IActionResult> Get(string id)
+        public async Task<IActionResult> Get(string id, [FromQuery] string expand = null)
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
-                return await _itemRepository.Get(new ObjectId(id));
+                return await _itemRepository.Get(new ObjectId(id), new ItemExpansionParams(expand));
             });
         }
 
@@ -42,7 +40,6 @@ namespace Meticulos.Api.App.Items
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-                
                 return await _itemRepository.Search(requestArgs);
             });
         }
@@ -68,7 +65,6 @@ namespace Meticulos.Api.App.Items
         {
             return await FunctionWrapper.ExecuteFunction(this, async () =>
             {
-
                 item.Id = new ObjectId(id);
                 return await _itemRepository.Update(item);
             });
@@ -80,7 +76,6 @@ namespace Meticulos.Api.App.Items
         {
             return await FunctionWrapper.ExecuteAction(this, async () =>
             {
-
                 await _itemRepository.Delete(new ObjectId(id));
             });
         }

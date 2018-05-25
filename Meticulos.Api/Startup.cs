@@ -22,6 +22,8 @@ using Meticulos.Api.App.Dashboard;
 using Meticulos.Api.App.AppUsers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using System;
+using System.Threading.Tasks;
 
 namespace meticulos_server
 {
@@ -100,6 +102,8 @@ namespace meticulos_server
             });
 
             // Dependency Injection Registrations
+            services.AddSingleton<IFunctionRegistry, FunctionRegistry>();
+
             services.AddTransient<IAppUserRepository, AppUserRepository>();
             services.AddTransient<IDashboardPanelRepository, DashboardPanelRepository>();
             services.AddTransient<IItemRepository, ItemRepository>();
@@ -118,7 +122,9 @@ namespace meticulos_server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public async void Configure(IApplicationBuilder app,
+            IServiceProvider serviceProvider, 
+            IHostingEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -128,16 +134,27 @@ namespace meticulos_server
             {
                 //TODO: app.UseExceptionHandler("...rel path to error page...");
             }
-
             app.UseStaticFiles();
 
             // Auth0 Configuration
             app.UseAuthentication();
 
-
             app.UseCors("AllowAllHeaders");
 
             app.UseMvc();
+
+            // Ensure all required functions exist as system defaults
+            var functionRegistry = serviceProvider.GetService<IFunctionRegistry>();
+            var workflowFunctionRepository = serviceProvider.GetService<IWorkflowFunctionRepository>();
+
+            foreach (WorkflowFunction func in functionRegistry.GetDefaultFunctions())
+            {
+                var wfFunc = await workflowFunctionRepository.Get(func.Id);
+                if (wfFunc == null)
+                {
+                    await workflowFunctionRepository.Add(wfFunc);
+                }
+            }
         }
     }
 }

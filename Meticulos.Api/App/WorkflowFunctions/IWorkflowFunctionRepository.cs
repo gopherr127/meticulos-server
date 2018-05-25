@@ -8,5 +8,6 @@ namespace Meticulos.Api.App.WorkflowFunctions
     {
         Task<WorkflowFunction> Get(ObjectId id);
         Task<IEnumerable<WorkflowFunction>> Search(WorkflowFunctionSearchRequest requestArgs);
+        Task Add(WorkflowFunction item);
     }
 }
