@@ -345,12 +345,13 @@ namespace Meticulos.Api.App.Items
                     fieldChanges.Add(new FieldChange()
                     {
                         FieldId = new ObjectId("000000000000000000000000"),
-                        FieldName = "WorkflowNode",
-                        OldValue = oldItem.WorkflowNode.Id.ToString(),
-                        NewValue = newItem.WorkflowNode.Id.ToString()
+                        FieldName = "Status",
+                        OldValue = (await _workflowNodeRepository.Get(oldItem.WorkflowNode.Id)).Name,
+                        NewValue = (await _workflowNodeRepository.Get(newItem.WorkflowNode.Id)).Name
                     });
                 }
 
+                // Collect old values that have changed
                 foreach (FieldValue oldFv in oldItem.FieldValues)
                 {
                     var newFv = newItem.FieldValues.Where(f => f.FieldId == oldFv.FieldId).FirstOrDefault();
@@ -362,6 +363,23 @@ namespace Meticulos.Api.App.Items
                             FieldId = oldFv.FieldId,
                             FieldName = oldFv.FieldName,
                             OldValue = oldFv.Value,
+                            NewValue = newFv.Value
+                        });
+                    }
+                }
+
+                // Collect new values that weren't saved before
+                foreach (FieldValue newFv in newItem.FieldValues)
+                {
+                    var oldFv = oldItem.FieldValues.Where(f => f.FieldId == newFv.FieldId).FirstOrDefault();
+
+                    if (oldFv == null)
+                    {
+                        fieldChanges.Add(new FieldChange()
+                        {
+                            FieldId = newFv.FieldId,
+                            FieldName = newFv.FieldName,
+                            OldValue = "",
                             NewValue = newFv.Value
                         });
                     }
