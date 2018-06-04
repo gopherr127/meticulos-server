@@ -7,5 +7,10 @@ namespace Meticulos.Api.App.Screens
     {
         public string Name { get; set; }
         public List<FieldMetadata> Fields { get; set; }
+        public bool DisplayLocation { get; set; }
+        public bool DisplayLinkedItems { get; set; }
+        public bool DisplayChildItems { get; set; }
+        public bool DisplayImageCapture { get; set; }
+        public bool DisplayAttachments { get; set; }
     }
 }

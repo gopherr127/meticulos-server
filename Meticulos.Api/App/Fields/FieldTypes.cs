@@ -10,7 +10,6 @@
         DateSelect,
         DateTimeSelect,
         CheckboxList,
-        RadioList,
-        ImageCapture
+        RadioList
     }
 }

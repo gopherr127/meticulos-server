@@ -1,5 +1,6 @@
 ﻿using Meticulos.Api.App.ChangeHistory;
 using Meticulos.Api.App.Fields;
+using Meticulos.Api.App.ItemImages;
 using Meticulos.Api.App.ItemTypes;
 using Meticulos.Api.App.Locations;
 using Meticulos.Api.App.WorkflowFunctions;
@@ -73,7 +74,7 @@ namespace Meticulos.Api.App.Items
                 }
                 item.Type = tempItemTypeCache[typeId];
 
-                if (item.LocationId == null && item.LocationId != ObjectId.Empty)
+                if (item.LocationId != null && item.LocationId != ObjectId.Empty)
                 {
                     string locationId = item.LocationId.ToString();
 
@@ -239,6 +240,10 @@ namespace Meticulos.Api.App.Items
             try
             {
                 var item = await _context.Items.Find(filter).FirstOrDefaultAsync();
+
+                if (item == null)
+                    throw new ApplicationException("Could not find item with ID:" + item.Id);
+
                 ResetTemporaryCaches();
                 await HydrateForGet(item, expand);
                 return item;
@@ -310,6 +315,12 @@ namespace Meticulos.Api.App.Items
             try
             {
                 ResetTemporaryCaches();
+
+                foreach (ItemImage img in item.Images)
+                {
+                    if (img.TargetItemId == ObjectId.Empty || img.TargetItemId != item.Id)
+                        item.Images.Remove(img);
+                }
 
                 item = await HydrateForSave(item);
 

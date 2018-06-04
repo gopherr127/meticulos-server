@@ -143,18 +143,20 @@ namespace meticulos_server
 
             app.UseMvc();
 
-            // Ensure all required functions exist as system defaults
-            var functionRegistry = serviceProvider.GetService<IFunctionRegistry>();
-            var workflowFunctionRepository = serviceProvider.GetService<IWorkflowFunctionRepository>();
+            // This is causing a 502 Bad Gateway error...commenting out for now.
 
-            foreach (WorkflowFunction func in functionRegistry.GetDefaultFunctions())
-            {
-                var wfFunc = await workflowFunctionRepository.Get(func.Id);
-                if (wfFunc == null)
-                {
-                    await workflowFunctionRepository.Add(wfFunc);
-                }
-            }
+            // Ensure all required functions exist as system defaults
+            //var functionRegistry = serviceProvider.GetService<IFunctionRegistry>();
+            //var workflowFunctionRepository = serviceProvider.GetService<IWorkflowFunctionRepository>();
+
+            //foreach (WorkflowFunction func in functionRegistry.GetDefaultFunctions())
+            //{
+            //    var wfFunc = await workflowFunctionRepository.Get(func.Id);
+            //    if (wfFunc == null)
+            //    {
+            //        await workflowFunctionRepository.Add(wfFunc);
+            //    }
+            //}
         }
     }
 }

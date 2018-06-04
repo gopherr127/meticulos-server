@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Meticulos.Api.App.Fields;
+using Meticulos.Api.App.ItemImages;
 using Meticulos.Api.App.ItemTypes;
 using Meticulos.Api.App.Locations;
 using Meticulos.Api.App.WorkflowNodes;
@@ -25,6 +26,7 @@ namespace Meticulos.Api.App.Items
         public ObjectId WorkflowNodeId { get; set; }
         public WorkflowNode WorkflowNode { get; set; }
         public List<FieldValue> FieldValues { get; set; }
+        public List<ItemImage> Images { get; set; }
 
         [BsonIgnore]
         public List<WorkflowTransition> Transitions { get; set; }
